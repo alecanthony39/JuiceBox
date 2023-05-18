@@ -74,12 +74,7 @@ async function getAllPosts() {
     throw error;
   }
 }
-async function createPost({
-  authorId,
-  title,
-  content,
-  tags = [], // this is new
-}) {
+async function createPost({ authorId, title, content, tags = [] }) {
   try {
     const {
       rows: [post],
@@ -274,20 +269,29 @@ async function getPostById(postId) {
       rows: [post],
     } = await client.query(
       `
-        SELECT *
-        FROM posts
-        WHERE id=$1;
-      `,
+      SELECT *
+      FROM posts
+      WHERE id=$1;
+    `,
       [postId]
     );
 
+    // THIS IS NEW
+    if (!post) {
+      throw {
+        name: "PostNotFoundError",
+        message: "Could not find a post with that postId",
+      };
+    }
+    // NEWNESS ENDS HERE
+
     const { rows: tags } = await client.query(
       `
-        SELECT tags.*
-        FROM tags
-        JOIN post_tags ON tags.id=post_tags."tagId"
-        WHERE post_tags."postId"=$1;
-      `,
+      SELECT tags.*
+      FROM tags
+      JOIN post_tags ON tags.id=post_tags."tagId"
+      WHERE post_tags."postId"=$1;
+    `,
       [postId]
     );
 
@@ -295,10 +299,10 @@ async function getPostById(postId) {
       rows: [author],
     } = await client.query(
       `
-        SELECT id, username, name, location
-        FROM users
-        WHERE id=$1;
-      `,
+      SELECT id, username, name, location
+      FROM users
+      WHERE id=$1;
+    `,
       [post.authorId]
     );
 
